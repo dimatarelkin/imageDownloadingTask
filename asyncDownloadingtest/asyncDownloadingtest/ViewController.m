@@ -15,7 +15,17 @@
 @property (assign, nonatomic) CGRect secondViewRect;
 @property (assign, nonatomic) CGRect thirdViewRect;
 @property (assign, nonatomic) CGRect fourthViewRect;
+
+@property (assign, nonatomic) CGRect firstSubViewRect;
+@property (assign, nonatomic) CGRect secondSubViewRect;
+@property (assign, nonatomic) CGRect thirdSubViewRect;
+
 @property (assign, nonatomic) CGRect buttonRect;
+
+@property (retain, nonatomic) NSMutableArray* arrayOfURLS;
+@property (retain, nonatomic) NSMutableArray* arrayOfRects;
+@property (retain, nonatomic) NSMutableArray* arrayOfURLSSUB;
+@property (retain, nonatomic) NSMutableArray* arrayOfSubRects;
 
 @end
 
@@ -24,14 +34,11 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-
-    
-    
     //layouting
     int frameQuantity = 5;
     int offsetQuantity = frameQuantity - 1;
-    CGFloat offset  = 15;
-    CGFloat height  = (CGRectGetMaxY(self.view.frame) - offsetQuantity* offset) / frameQuantity;
+    CGFloat offset  = 20;
+    CGFloat height  = (CGRectGetMaxY(self.view.frame) - offsetQuantity * offset) / frameQuantity;
     CGFloat minY    = CGRectGetMinY(self.view.frame) + offset;
     CGFloat firstY  = minY + offset + height;
     CGFloat secondY = firstY + offset + height;
@@ -50,73 +57,98 @@
     //4
     self.fourthViewRect = CGRectMake(CGRectGetMinX(self.view.frame), thirdY,
                                      CGRectGetMaxX(self.view.frame), height);
+    
+    //5 subrects for images in 4th rect
+    //rect for view1
+    self.firstSubViewRect = CGRectMake(self.fourthViewRect.origin.x,
+                               self.fourthViewRect.origin.y,
+                               self.fourthViewRect.size.width / 3,
+                               self.fourthViewRect.size.height);
+    //rect for view1
+    self.secondSubViewRect = CGRectMake(self.fourthViewRect.size.width / 3,
+                               self.fourthViewRect.origin.y,
+                               self.fourthViewRect.size.width / 3,
+                               self.fourthViewRect.size.height);
+    //rect for view1
+    self.thirdSubViewRect = CGRectMake(self.fourthViewRect.size.width * 2 / 3,
+                               self.fourthViewRect.origin.y,
+                               self.fourthViewRect.size.width / 3,
+                               self.fourthViewRect.size.height);
+    
     //for button
+    self.buttonRect     = CGRectMake(CGRectGetMinX(self.view.frame) + 60, fourthY,
+                                     CGRectGetMaxX(self.view.frame) - 120, height - 90);
+    
     // Do any additional setup after loading the view, typically from a nib
-    UIButton* downloadFileButton = [[UIButton alloc] initWithFrame:CGRectMake(CGRectGetMinX(self.view.frame) + 60, fourthY,
-                                                                              CGRectGetMaxX(self.view.frame) - 120, height - 90)];
+    UIButton* downloadFileButton = [[UIButton alloc] initWithFrame:_buttonRect];
     [downloadFileButton setTitle:@"refresh" forState:UIControlStateNormal];
     [downloadFileButton setBackgroundColor:[UIColor redColor]];
     [downloadFileButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
     [downloadFileButton.layer setCornerRadius:12];
     [downloadFileButton addTarget:self action:@selector(handleDownloadImageAction:) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:downloadFileButton];
+    
+    [self createSubViews];
 }
 
+- (void)createSubViews {
+    //2 DOWNLOADING
+    self.arrayOfURLS  = [NSMutableArray arrayWithObjects:
+                        [NSURL URLWithString:@"https://static.alphacoders.com/alpha_system_360.png"],
+                        [NSURL URLWithString:@"https://cdn.pixabay.com/photo/2016/03/02/13/59/bird-1232416__480.png"],
+                        [NSURL URLWithString:@"https://cdn.pixabay.com/photo/2016/03/03/17/15/fruit-1234657__480.png"],nil];
+    
+    self.arrayOfRects  = [NSMutableArray arrayWithObjects:
+                         [NSValue valueWithCGRect:self.firstViewRect],
+                         [NSValue valueWithCGRect:self.secondViewRect],
+                         [NSValue valueWithCGRect:self.thirdViewRect],
+                         [NSValue valueWithCGRect:self.fourthViewRect],
+                         nil];
+    //download 4th imageView with 3 images
+    self.arrayOfURLSSUB = [NSMutableArray arrayWithObjects:
+                           [NSURL URLWithString:@"https://cdn.pixabay.com/photo/2017/02/04/22/37/panther-2038656__480.png"],
+                           [NSURL URLWithString:@"https://cdn.pixabay.com/photo/2017/09/23/11/11/butterfly-2778491__480.png"],
+                           [NSURL URLWithString:@"https://cdn.pixabay.com/photo/2016/02/04/13/49/the-earth-1179212__480.png"],
+                           nil];
+    
+    self.arrayOfSubRects = [NSMutableArray arrayWithObjects:
+                           [NSValue valueWithCGRect:self.firstSubViewRect],
+                           [NSValue valueWithCGRect:self.secondSubViewRect],
+                           [NSValue valueWithCGRect:self.thirdSubViewRect],
+                            nil];
+    
+}
 
 - (void)handleDownloadImageAction:(UIButton*)button {
-    
+//1 ANIMATION
     //animate button
     [self changeButton:button forState:UIControlStateHighlighted animated:YES];
     [self changeButton:button forState:UIControlStateNormal animated:YES];
     
-    //download first image
-    [self downloadImageWithURL:[NSURL URLWithString:@"https://static.alphacoders.com/alpha_system_360.png"]
-                withCompletion:^(UIImage * image) {
-                    [self presentImageDetailsScreenWithImage:image andRect:_firstViewRect];
+    NSLog(@"Subviews before delete: %i!",self.view.subviews.count);
+    if ([self.view subviews]) {
+        for(int i = 1; self.view.subviews.count > i; i++) {
+            [self.view.subviews[i] removeFromSuperview];
+        }
+    }
+    NSLog(@"Subviews after delete: %i!",self.view.subviews.count);
+
+//download first 3 images
+    [self downloadImageWithArrayOfURLS:self.arrayOfURLS
+                withCompletion:^(NSMutableArray* imageArray) {
+                    [self presentImageDetailsScreenWithImage:imageArray andArrayOFRects:_arrayOfRects];
                 }];
     
-    //download second image
-    [self downloadImageWithURL: [NSURL URLWithString:@"https://cdn.pixabay.com/photo/2016/03/02/13/59/bird-1232416__480.png"]
-                withCompletion:^(UIImage * image) {
-                    [self presentImageDetailsScreenWithImage:image andRect:_secondViewRect];
-                }];
-    
-    //download third image
-    [self downloadImageWithURL: [NSURL URLWithString:@"https://cdn.pixabay.com/photo/2016/03/03/17/15/fruit-1234657__480.png"]
-                withCompletion:^(UIImage * image) {
-                    [self presentImageDetailsScreenWithImage:image andRect:_thirdViewRect];
-                }];
-    
-    
-    //download 4th imageView with 4 images
-    NSArray* arrayOfURLS = [NSArray arrayWithObjects:
-                            [NSURL URLWithString:@"https://cdn.pixabay.com/photo/2017/02/04/22/37/panther-2038656__480.png"],
-                            [NSURL URLWithString:@"https://cdn.pixabay.com/photo/2017/09/23/11/11/butterfly-2778491__480.png"],
-                            [NSURL URLWithString:@"https://cdn.pixabay.com/photo/2016/02/04/13/49/the-earth-1179212__480.png"], nil];
-    
-    Downloader* downloader = [[Downloader alloc] init];
-    [downloader downloadThroughDispatchGroup:arrayOfURLS withCompletion:^(NSDictionary * dictionary) {
-    [self presentImageDetailsScreenWithDictionary:dictionary withRect:_fourthViewRect];
+//3 DOWNLOADING using dispatch_group
+
+    [Downloader downloadThroughDispatchGroup:_arrayOfURLSSUB withCompletion:^(NSDictionary * dictionary) {
+        NSMutableArray* arrayOFImages = [NSMutableArray arrayWithArray:dictionary.allValues];
+        [self presentImageDetailsScreenWithImage:arrayOFImages andArrayOFRects:_arrayOfSubRects];
     }];
+
 }
 
-
-
--(void)downloadImageWithURL:(NSURL*)url withCompletion:(void(^_Nullable)(UIImage*))completion {
-    
-    //background thread
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSData* imageData = [NSData dataWithContentsOfURL:url];
-        UIImage *newImage = [UIImage imageWithData:imageData];
-        
-        //main thread
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion(newImage);
-        });
-    });
-}
-
-
+//1
 - (void)changeButton:(UIButton*)button forState:(UIControlState)state animated:(BOOL)isAnimated {
     
     if (isAnimated) {
@@ -132,52 +164,54 @@
     }
 }
 
-- (void)presentImageDetailsScreenWithImage:(UIImage*)image andRect:(CGRect)rect {
-    //new image
-    UIImageView *imgView = [[UIImageView alloc] initWithImage:image];
-    imgView.frame = rect;
-    imgView.layer.backgroundColor = UIColor.lightGrayColor.CGColor;
-    imgView.layer.contentsGravity = kCAGravityResizeAspect;
-    [self.view addSubview:imgView];
+//2
+-(void)downloadImageWithArrayOfURLS:(NSMutableArray<NSURL*>*)urlArray withCompletion:(void(^_Nullable)(NSMutableArray*))completion {
+    NSMutableArray* imagesArray = [NSMutableArray array];
     
-    //releasing
-    [imgView release];
+        //background thread
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            for (NSURL* url in urlArray) {
+               
+                NSData* imageData = [NSData dataWithContentsOfURL:url];
+                UIImage *newImage = [UIImage imageWithData:imageData];
+                [imagesArray addObject:newImage];
+
+            }
+            //call completion on main thread
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion(imagesArray);
+            });
+        });
+    
 }
 
-- (void)presentImageDetailsScreenWithDictionary:(NSDictionary*)dictionary withRect:(CGRect)rect {
-    UIView *subViewWithImages = [[UIView alloc] initWithFrame:rect];
-    subViewWithImages.backgroundColor = UIColor.lightGrayColor;
-    [self.view addSubview:subViewWithImages];
-    
-    
-    //rect for view1
-    CGRect v1rect = CGRectMake(rect.origin.x,
-                               rect.origin.y,
-                               rect.size.width / 3,
-                               rect.size.height);
-    //rect for view1
-    CGRect v2rect = CGRectMake(rect.size.width / 3,
-                               rect.origin.y,
-                               rect.size.width / 3,
-                               rect.size.height);
-    //rect for view1
-    CGRect v3rect = CGRectMake(rect.size.width * 2 / 3,
-                               rect.origin.y,
-                               rect.size.width / 3,
-                               rect.size.height);
-    
 
-    UIImage* image1 = [dictionary objectForKey:@"https://cdn.pixabay.com/photo/2017/02/04/22/37/panther-2038656__480.png"];
-    [self presentImageDetailsScreenWithImage:image1 andRect:v1rect];
+
+//4
+- (void)presentImageDetailsScreenWithImage:(NSMutableArray<UIImage*>*)imageArray andArrayOFRects:(NSMutableArray*)rectsArray {
+ 
     
-    UIImage* image2 = [dictionary objectForKey:@"https://cdn.pixabay.com/photo/2017/09/23/11/11/butterfly-2778491__480.png"];
-    [self presentImageDetailsScreenWithImage:image2 andRect:v2rect];
-    
-    UIImage* image3 = [dictionary objectForKey:@"https://cdn.pixabay.com/photo/2016/02/04/13/49/the-earth-1179212__480.png"];
-    [self presentImageDetailsScreenWithImage:image3 andRect:v3rect];
-    
-    //releasing
-    [subViewWithImages release];
+    for (int i = 0; imageArray.count > i; i++) {
+        //new image
+        UIImageView *imgView = [[UIImageView alloc] initWithImage:[imageArray objectAtIndex:i]];
+        imgView.frame = [[rectsArray objectAtIndex:i] CGRectValue];
+        imgView.layer.backgroundColor = UIColor.lightGrayColor.CGColor;
+        imgView.layer.contentsGravity = kCAGravityResizeAspect;
+        [self.view addSubview:imgView];
+
+        //releasing
+        [imgView release];
+    }
+    NSLog(@"ALL subViews %i",[self.view  subviews].count);
+}
+
+
+- (void)dealloc {
+    [_arrayOfURLS release];
+    [_arrayOfRects release];
+    [_arrayOfSubRects release];
+    [_arrayOfURLSSUB release];
+    [super dealloc];
 }
 
 @end

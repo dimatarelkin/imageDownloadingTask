@@ -30,7 +30,7 @@
 }
 
 
-- (void)downloadThroughDispatchGroup:(NSArray*)arrayOFURL withCompletion: (void(^_Nullable)(NSDictionary*))completion {
++ (void)downloadThroughDispatchGroup:(NSArray*)arrayOFURL withCompletion: (void(^_Nullable)(NSDictionary*))completion {
     
     dispatch_group_t group = dispatch_group_create();
     

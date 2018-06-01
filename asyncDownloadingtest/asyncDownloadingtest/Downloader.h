@@ -13,5 +13,5 @@
 @property (weak, nonatomic) NSArray<NSURL*>* arrayOfURLS;
 
 - (void)downloadImageWithURL:(NSURL*)url withCompletion:(void(^_Nullable)(UIImage*))completion;
-- (void)downloadThroughDispatchGroup:(NSArray*)arrayOFURL withCompletion: (void(^_Nullable)(NSDictionary*))completion;
++ (void)downloadThroughDispatchGroup:(NSArray*)arrayOFURL withCompletion: (void(^_Nullable)(NSDictionary*))completion;
 @end
