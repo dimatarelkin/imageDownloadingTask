@@ -27,6 +27,8 @@
 @property (retain, nonatomic) NSMutableArray* arrayOfURLSSUB;
 @property (retain, nonatomic) NSMutableArray* arrayOfSubRects;
 
+@property (unsafe_unretained, nonatomic) UIView* imageArea;
+
 @end
 
 @implementation ViewController
@@ -88,6 +90,14 @@
     [downloadFileButton addTarget:self action:@selector(handleDownloadImageAction:) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:downloadFileButton];
     
+    self.imageArea = [[UIView alloc] initWithFrame:CGRectMake(CGRectGetMinX(self.view.frame),
+                                                              CGRectGetMinY(self.view.frame),
+                                                              CGRectGetMaxX(self.view.frame),
+                                                              fourthY - offset)];
+    
+    self.imageArea.backgroundColor = UIColor.whiteColor;
+    self.imageArea.layer.cornerRadius = 5;
+    [self.view addSubview:self.imageArea];
     [self createSubViews];
 }
 
@@ -125,13 +135,14 @@
     [self changeButton:button forState:UIControlStateHighlighted animated:YES];
     [self changeButton:button forState:UIControlStateNormal animated:YES];
     
-    NSLog(@"Subviews before delete: %i!",self.view.subviews.count);
-    if ([self.view subviews]) {
-        for(int i = 1; self.view.subviews.count > i; i++) {
-            [self.view.subviews[i] removeFromSuperview];
+    NSLog(@"Subviews before delete: %i!",self.imageArea.subviews.count);
+    if ([self.imageArea subviews].count > 0) {
+        NSLog(@"start removing");
+        for(UIView* view in self.imageArea.subviews) {
+            [view removeFromSuperview];
         }
     }
-    NSLog(@"Subviews after delete: %i!",self.view.subviews.count);
+    NSLog(@"Subviews after delete: %i!",self.imageArea.subviews.count);
 
 //download first 3 images
     [self downloadImageWithArrayOfURLS:self.arrayOfURLS
@@ -140,10 +151,10 @@
                 }];
     
 //3 DOWNLOADING using dispatch_group
-
     [Downloader downloadThroughDispatchGroup:_arrayOfURLSSUB withCompletion:^(NSDictionary * dictionary) {
         NSMutableArray* arrayOFImages = [NSMutableArray arrayWithArray:dictionary.allValues];
         [self presentImageDetailsScreenWithImage:arrayOFImages andArrayOFRects:_arrayOfSubRects];
+        [arrayOFImages removeAllObjects];
     }];
 
 }
@@ -169,20 +180,21 @@
     NSMutableArray* imagesArray = [NSMutableArray array];
     
         //background thread
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    
             for (NSURL* url in urlArray) {
-               
+               dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
                 NSData* imageData = [NSData dataWithContentsOfURL:url];
                 UIImage *newImage = [UIImage imageWithData:imageData];
                 [imagesArray addObject:newImage];
-
-            }
+               
             //call completion on main thread
             dispatch_async(dispatch_get_main_queue(), ^{
-                completion(imagesArray);
+                completion([imagesArray copy]);
             });
         });
-    
+        }
+    NSLog(@"there are %i images in array", imagesArray.count);
+    [imagesArray removeAllObjects];
 }
 
 
@@ -190,19 +202,21 @@
 //4
 - (void)presentImageDetailsScreenWithImage:(NSMutableArray<UIImage*>*)imageArray andArrayOFRects:(NSMutableArray*)rectsArray {
  
-    
     for (int i = 0; imageArray.count > i; i++) {
         //new image
         UIImageView *imgView = [[UIImageView alloc] initWithImage:[imageArray objectAtIndex:i]];
         imgView.frame = [[rectsArray objectAtIndex:i] CGRectValue];
-        imgView.layer.backgroundColor = UIColor.lightGrayColor.CGColor;
+        imgView.layer.backgroundColor = UIColor.whiteColor.CGColor;
+        imgView.layer.cornerRadius = 20;
+        imgView.layer.shadowOpacity = 0.15;
+        
         imgView.layer.contentsGravity = kCAGravityResizeAspect;
-        [self.view addSubview:imgView];
+        [self.imageArea addSubview:imgView];
 
         //releasing
         [imgView release];
     }
-    NSLog(@"ALL subViews %i",[self.view  subviews].count);
+    NSLog(@"ALL subViews %i",[self.imageArea  subviews].count);
 }
 
 
